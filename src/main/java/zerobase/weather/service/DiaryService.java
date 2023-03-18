@@ -4,11 +4,14 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import zerobase.weather.WeatherApplication;
 import zerobase.weather.domain.DateWeather;
 import zerobase.weather.domain.Diary;
 import zerobase.weather.repository.DateWeatherRepository;
@@ -33,6 +36,8 @@ public class DiaryService {
 
     private final DateWeatherRepository dateWeatherRepository;
 
+    private static final Logger logger = LoggerFactory.getLogger(WeatherApplication.class);
+
     public DiaryService(DiaryRepository diaryRepository, DateWeatherRepository dateWeatherRepository) {
         this.diaryRepository = diaryRepository;
         this.dateWeatherRepository = dateWeatherRepository;
@@ -41,11 +46,13 @@ public class DiaryService {
     @Transactional // DB 를 건드는, SAVE 하는 함수이니 @Transactional ...
     @Scheduled(cron = "0 0 1 * * *") // 초 분 시 일 월 .. -> 0초 0분 1시 매일 매달 (매일 새벽 1시마다 이 함수가 동작함)
     public void saveWeatherDate() {
+        logger.info("오늘도 새벽 1시에 날씨를 잘 가져왔습니다.");
         dateWeatherRepository.save(getWeatherFromApi());
     }
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public void createDiary(LocalDate date, String text) {
+        logger.info("started to create diary");
 //        //open weather data map 에서 날씨 데이터 가져오기.
 //        String weatherData = getWeatherString();
 //        // 받아온 날씨 json 파싱하기.
@@ -59,6 +66,7 @@ public class DiaryService {
         nowDiary.setText(text);
 
         diaryRepository.save(nowDiary);
+        logger.info("end to create diary - !");
     }
 
     private DateWeather getWeatherFromApi() {
@@ -89,6 +97,7 @@ public class DiaryService {
 
     @Transactional(readOnly = true)
     public List<Diary> readDiary(LocalDate date) {
+        logger.debug("read - diary");
         return diaryRepository.findAllByDate(date);
     }
 
